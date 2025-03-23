@@ -69,6 +69,28 @@ export interface PaginationProps
   showTotal?: (total: number, range: [number, number]) => React.ReactNode;
   // WAI-ARIA
   role?: React.AriaRole | undefined;
+
+  // 새로 추가한 속성들
+  /**
+   * 10페이지씩 이동하는 버튼(<< 및 >>) 표시 여부
+   */
+  showMegaJumpers?: boolean;
+
+  /**
+   * 한 번에 건너뛸 페이지 수
+   * @default 10
+   */
+  megaJumpSize?: number;
+
+  /**
+   * 10페이지 이전 점프 버튼의 아이콘
+   */
+  megaJumpPrevIcon?: React.ReactNode;
+
+  /**
+   * 10페이지 다음 점프 버튼의 아이콘
+   */
+  megaJumpNextIcon?: React.ReactNode;
 }
 
 export interface PaginationState {

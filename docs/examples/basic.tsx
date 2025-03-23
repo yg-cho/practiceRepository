@@ -12,7 +12,7 @@ const App = () => (
     <Pagination total={90} />
     <Pagination total={100} />
     <Pagination total={120} />
-    <Pagination total={500} />
+    <Pagination total={500} showMegaJumpers={true}/>
   </>
 );
 

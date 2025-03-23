@@ -65,6 +65,12 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     sizeChangerRender,
     pageSizeOptions,
 
+    // 새로 추가: mega jumper 관련 속성들
+    showMegaJumpers = false,
+    megaJumpSize = 10,
+    megaJumpPrevIcon,
+    megaJumpNextIcon,
+
     // render
     itemRender = defaultItemRender,
     jumpPrevIcon,
@@ -107,6 +113,13 @@ const Pagination: React.FC<PaginationProps> = (props) => {
   const jumpNextPage = Math.min(
     calculatePage(undefined, pageSize, total),
     current + (showLessItems ? 3 : 5),
+  );
+
+  // 새로 추가: mega jump 페이지 계산
+  const megaJumpPrevPage = Math.max(1, current - megaJumpSize);
+  const megaJumpNextPage = Math.min(
+    calculatePage(undefined, pageSize, total),
+    current + megaJumpSize,
   );
 
   function getItemIcon(
@@ -225,6 +238,10 @@ const Pagination: React.FC<PaginationProps> = (props) => {
   const hasPrev = current > 1;
   const hasNext = current < calculatePage(undefined, pageSize, total);
 
+  // 새로 추가: mega jump 가능 여부 확인
+  const hasMegaPrev = current > 1;
+  const hasMegaNext = current < calculatePage(undefined, pageSize, total);
+
   function prevHandle() {
     if (hasPrev) handleChange(current - 1);
   }
@@ -239,6 +256,15 @@ const Pagination: React.FC<PaginationProps> = (props) => {
 
   function jumpNextHandle() {
     handleChange(jumpNextPage);
+  }
+
+  // 새로 추가: mega jump 핸들러
+  function megaJumpPrevHandle() {
+    handleChange(megaJumpPrevPage);
+  }
+
+  function megaJumpNextHandle() {
+    handleChange(megaJumpNextPage);
   }
 
   function runIfEnter(
@@ -271,6 +297,15 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     runIfEnter(event, jumpNextHandle);
   }
 
+  // 새로 추가: mega jump 키보드 이벤트 핸들러
+  function runIfEnterMegaJumpPrev(event: React.KeyboardEvent<HTMLLIElement>) {
+    runIfEnter(event, megaJumpPrevHandle);
+  }
+
+  function runIfEnterMegaJumpNext(event: React.KeyboardEvent<HTMLLIElement>) {
+    runIfEnter(event, megaJumpNextHandle);
+  }
+
   function renderPrev(prevPage: number) {
     const prevButton = itemRender(
       prevPage,
@@ -291,6 +326,29 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     return React.isValidElement<HTMLButtonElement>(nextButton)
       ? React.cloneElement(nextButton, { disabled: !hasNext })
       : nextButton;
+  }
+
+  // 새로 추가: mega jump 버튼 렌더링 함수
+  function renderMegaJumpPrev(megaPrevPage: number) {
+    const megaPrevButton = itemRender(
+      megaPrevPage,
+      'mega-jump-prev',
+      getItemIcon(megaJumpPrevIcon, 'prev 10 pages'),
+    );
+    return React.isValidElement<HTMLButtonElement>(megaPrevButton)
+      ? React.cloneElement(megaPrevButton, { disabled: !hasMegaPrev })
+      : megaPrevButton;
+  }
+
+  function renderMegaJumpNext(megaNextPage: number) {
+    const megaNextButton = itemRender(
+      megaNextPage,
+      'mega-jump-next',
+      getItemIcon(megaJumpNextIcon, 'next 10 pages'),
+    );
+    return React.isValidElement<HTMLButtonElement>(megaNextButton)
+      ? React.cloneElement(megaNextButton, { disabled: !hasMegaNext })
+      : megaNextButton;
   }
 
   function handleGoTO(event: any) {
@@ -316,6 +374,10 @@ const Pagination: React.FC<PaginationProps> = (props) => {
   );
 
   let jumpNext: React.ReactElement<PagerProps> = null;
+
+  // 새로 추가: mega jumper 버튼 초기화
+  let megaJumpPrev: React.ReactNode = null;
+  let megaJumpNext: React.ReactNode = null;
 
   const allPages = calculatePage(undefined, pageSize, total);
 
@@ -514,6 +576,46 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     }
   }
 
+  // 새로 추가: mega jump 버튼 생성
+  if (showMegaJumpers) {
+    const megaPrevContent = renderMegaJumpPrev(megaJumpPrevPage);
+    const megaNextContent = renderMegaJumpNext(megaJumpNextPage);
+
+    // 이전 10페이지 이동 버튼
+    megaJumpPrev = megaPrevContent ? (
+      <li
+        title={showTitle ? `이전 ${megaJumpSize}페이지` : null}
+        key="mega-prev"
+        onClick={megaJumpPrevHandle}
+        tabIndex={hasMegaPrev ? 0 : null}
+        onKeyDown={runIfEnterMegaJumpPrev}
+        className={classNames(`${prefixCls}-mega-jump-prev`, {
+          [`${prefixCls}-mega-jump-prev-custom-icon`]: !!megaJumpPrevIcon,
+          [`${prefixCls}-disabled`]: !hasMegaPrev,
+        })}
+      >
+        {megaPrevContent}
+      </li>
+    ) : null;
+
+    // 다음 10페이지 이동 버튼
+    megaJumpNext = megaNextContent ? (
+      <li
+        title={showTitle ? `다음 ${megaJumpSize}페이지` : null}
+        key="mega-next"
+        onClick={megaJumpNextHandle}
+        tabIndex={hasMegaNext ? 0 : null}
+        onKeyDown={runIfEnterMegaJumpNext}
+        className={classNames(`${prefixCls}-mega-jump-next`, {
+          [`${prefixCls}-mega-jump-next-custom-icon`]: !!megaJumpNextIcon,
+          [`${prefixCls}-disabled`]: !hasMegaNext,
+        })}
+      >
+        {megaNextContent}
+      </li>
+    ) : null;
+  }
+
   let prev = renderPrev(prevPage);
   if (prev) {
     const prevDisabled = !hasPrev || !allPages;
@@ -569,6 +671,7 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     [`${prefixCls}-end`]: align === 'end',
     [`${prefixCls}-simple`]: simple,
     [`${prefixCls}-disabled`]: disabled,
+    [`${prefixCls}-with-mega-jumpers`]: showMegaJumpers,
   });
 
   return (
@@ -579,9 +682,13 @@ const Pagination: React.FC<PaginationProps> = (props) => {
       {...dataOrAriaAttributeProps}
     >
       {totalText}
+      {/* 새로 추가: mega jump prev 버튼 */}
+      {showMegaJumpers && megaJumpPrev}
       {prev}
       {simple ? simplePager : pagerList}
       {next}
+      {/* 새로 추가: mega jump next 버튼 */}
+      {showMegaJumpers && megaJumpNext}
       <Options
         locale={locale}
         rootPrefixCls={prefixCls}
