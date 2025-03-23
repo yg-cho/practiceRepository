@@ -74,13 +74,13 @@ export interface PaginationProps
   /**
    * 10페이지씩 이동하는 버튼(<< 및 >>) 표시 여부
    */
-  showMegaJumpers?: boolean;
+  jumper?: boolean;
 
   /**
    * 한 번에 건너뛸 페이지 수
    * @default 10
    */
-  megaJumpSize?: number;
+  jumpSize?: number;
 
   /**
    * 10페이지 이전 점프 버튼의 아이콘

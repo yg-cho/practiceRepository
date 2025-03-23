@@ -66,8 +66,8 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     pageSizeOptions,
 
     // 새로 추가: mega jumper 관련 속성들
-    showMegaJumpers = false,
-    megaJumpSize = 10,
+    jumper = false,
+    jumpSize = 10,
     megaJumpPrevIcon,
     megaJumpNextIcon,
 
@@ -116,10 +116,10 @@ const Pagination: React.FC<PaginationProps> = (props) => {
   );
 
   // 새로 추가: mega jump 페이지 계산
-  const megaJumpPrevPage = Math.max(1, current - megaJumpSize);
+  const megaJumpPrevPage = Math.max(1, current - jumpSize);
   const megaJumpNextPage = Math.min(
     calculatePage(undefined, pageSize, total),
-    current + megaJumpSize,
+    current + jumpSize,
   );
 
   function getItemIcon(
@@ -577,14 +577,14 @@ const Pagination: React.FC<PaginationProps> = (props) => {
   }
 
   // 새로 추가: mega jump 버튼 생성
-  if (showMegaJumpers) {
+  if (jumper) {
     const megaPrevContent = renderMegaJumpPrev(megaJumpPrevPage);
     const megaNextContent = renderMegaJumpNext(megaJumpNextPage);
 
     // 이전 10페이지 이동 버튼
     megaJumpPrev = megaPrevContent ? (
       <li
-        title={showTitle ? `이전 ${megaJumpSize}페이지` : null}
+        title={showTitle ? `이전 ${jumpSize}페이지` : null}
         key="mega-prev"
         onClick={megaJumpPrevHandle}
         tabIndex={hasMegaPrev ? 0 : null}
@@ -601,7 +601,7 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     // 다음 10페이지 이동 버튼
     megaJumpNext = megaNextContent ? (
       <li
-        title={showTitle ? `다음 ${megaJumpSize}페이지` : null}
+        title={showTitle ? `다음 ${jumpSize}페이지` : null}
         key="mega-next"
         onClick={megaJumpNextHandle}
         tabIndex={hasMegaNext ? 0 : null}
@@ -671,7 +671,7 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     [`${prefixCls}-end`]: align === 'end',
     [`${prefixCls}-simple`]: simple,
     [`${prefixCls}-disabled`]: disabled,
-    [`${prefixCls}-with-mega-jumpers`]: showMegaJumpers,
+    [`${prefixCls}-with-mega-jumpers`]: jumper,
   });
 
   return (
@@ -683,12 +683,12 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     >
       {totalText}
       {/* 새로 추가: mega jump prev 버튼 */}
-      {showMegaJumpers && megaJumpPrev}
+      {jumper && megaJumpPrev}
       {prev}
       {simple ? simplePager : pagerList}
       {next}
       {/* 새로 추가: mega jump next 버튼 */}
-      {showMegaJumpers && megaJumpNext}
+      {jumper && megaJumpNext}
       <Options
         locale={locale}
         rootPrefixCls={prefixCls}
