@@ -63,7 +63,7 @@ export interface PaginationProps
   onShowSizeChange?: (current: number, size: number) => void;
   itemRender?: (
     page: number,
-    type: 'page' | 'prev' | 'next' | 'jump-prev' | 'jump-next',
+    type: 'page' | 'prev' | 'next' | 'jump-prev' | 'jump-next' | 'mega-jump-prev' | 'mega-jump-next',
     element: React.ReactNode,
   ) => React.ReactNode;
   showTotal?: (total: number, range: [number, number]) => React.ReactNode;
