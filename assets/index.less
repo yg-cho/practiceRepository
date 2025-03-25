@@ -369,7 +369,54 @@
       }
     }
   }
+  /* Dot Pagination 스타일 */
+  .rc-pagination-dot {
+    display: inline-block;
+    margin: 0 4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s;
+    vertical-align: middle;
+  }
 
+  .rc-pagination-dot .rc-pagination-dot-inner {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: #d9d9d9; /* 기본 상태: 회색 */
+    transition: all 0.3s;
+  }
+
+  .rc-pagination-dot:hover .rc-pagination-dot-inner {
+    background-color: #ffffff; /* Hover 상태: 흰색 */
+  }
+
+  .rc-pagination-dot-active .rc-pagination-dot-inner {
+    background-color: #000000; /* 선택된 상태: 검정색 */
+  }
+
+  /* Dot 타입 페이지네이션 컨테이너 스타일 */
+  .rc-pagination-dot {
+    margin: 0 4px;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* 접근성을 위한 포커스 스타일 */
+  .rc-pagination-dot:focus {
+    outline: 2px solid #40a9ff;
+    outline-offset: 1px;
+  }
+
+  /* Dot 타입 페이지네이션의 컨테이너 */
+  .rc-pagination.rc-pagination-dot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
   // ============================ Disabled ============================
   &&-disabled {
     cursor: not-allowed;

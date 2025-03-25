@@ -94,6 +94,9 @@ export interface PaginationProps
 
   paginationType?: string;
   maxContinuousPages?: number;
+
+  maxDotPages?: number;
+
 }
 
 export interface PaginationState {

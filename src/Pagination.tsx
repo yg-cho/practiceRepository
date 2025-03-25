@@ -30,6 +30,25 @@ function calculatePage(p: number | undefined, pageSize: number, total: number) {
   return Math.floor((total - 1) / _pageSize) + 1;
 }
 
+// Dot 타입을 위한 새로운 컴포넌트
+const DotPager = ({ active, onClick, page, className = '', style }) => {
+  return (
+    <li
+      className={classNames('rc-pagination-dot', {
+        'rc-pagination-dot-active': active,
+      }, className)}
+      style={style}
+      onClick={() => onClick(page)}
+      tabIndex={0}
+      role="button"
+      aria-current={active ? 'page' : null}
+      aria-label={`Page ${page}`}
+    >
+      <span className="rc-pagination-dot-inner" />
+    </li>
+  );
+};
+
 const Pagination: React.FC<PaginationProps> = (props) => {
   const {
     // cls
@@ -71,9 +90,10 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     megaJumpPrevIcon,
     megaJumpNextIcon,
 
-    // 새로 추가: 페이지네이션 타입 (default, continuous)
+    // 페이지네이션 타입 (default, continuous, dot)
     paginationType = 'default',
     maxContinuousPages = 10, // 연속 모드에서 최대 표시할 페이지 수
+    maxDotPages = 7, // Dot 모드에서 최대 페이지 수 (7페이지 * 10개 = 70개 아이템)
 
     // render
     itemRender = defaultItemRender,
@@ -102,6 +122,19 @@ const Pagination: React.FC<PaginationProps> = (props) => {
   useEffect(() => {
     setInternalInputVal(current);
   }, [current]);
+
+  // Dot 타입일 때 최대 아이템 수 검사 및 경고
+  useEffect(() => {
+    if (paginationType === 'dot') {
+      const maxItems = maxDotPages * pageSize;
+      if (total > maxItems) {
+        warning(
+          false,
+          `Dot pagination type supports maximum ${maxItems} items (${maxDotPages} pages with ${pageSize} items per page). Current total is ${total}.`,
+        );
+      }
+    }
+  }, [paginationType, total, pageSize, maxDotPages]);
 
   const hasOnChange = onChange !== noop;
   const hasCurrent = 'current' in props;
@@ -504,8 +537,26 @@ const Pagination: React.FC<PaginationProps> = (props) => {
   // ====================== Normal ======================
   const pageBufferSize = showLessItems ? 1 : 2;
 
+  // ====================== Dot 타입 처리 ======================
+  if (paginationType === 'dot') {
+    // 최대 페이지 수 제한
+    const effectivePages = Math.min(allPages, maxDotPages);
+
+    for (let i = 1; i <= effectivePages; i += 1) {
+      pagerList.push(
+        <DotPager
+          key={i}
+          page={i}
+          active={current === i}
+          onClick={handleChange}
+          className={paginationClassNames?.item}
+          style={styles?.item}
+        />
+      );
+    }
+  }
   // 새로운 페이지네이션 타입 처리 - continuous
-  if (paginationType === 'continuous') {
+  else if (paginationType === 'continuous') {
     // 현재 페이지가 속한 그룹 계산
     const groupSize = maxContinuousPages;
     const currentGroup = Math.ceil(current / groupSize);
@@ -728,7 +779,8 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     [`${prefixCls}-simple`]: simple,
     [`${prefixCls}-disabled`]: disabled,
     [`${prefixCls}-with-mega-jumpers`]: jumper,
-    [`${prefixCls}-continuous`]: paginationType === 'continuous',  // 새로운 클래스 추가
+    [`${prefixCls}-continuous`]: paginationType === 'continuous',
+    [`${prefixCls}-dot`]: paginationType === 'dot', // Dot 타입 클래스 추가
   });
 
   return (
