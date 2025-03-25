@@ -11,8 +11,9 @@ const App = () => (
     <Pagination total={80} />
     <Pagination total={90} />
     <Pagination total={100} />
-    <Pagination total={120} />
+    <Pagination total={500} paginationType="continuous" maxContinuousPages={10}/>
     <Pagination total={500} jumper={true}/>
+
   </>
 );
 

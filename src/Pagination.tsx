@@ -71,6 +71,10 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     megaJumpPrevIcon,
     megaJumpNextIcon,
 
+    // 새로 추가: 페이지네이션 타입 (default, continuous)
+    paginationType = 'default',
+    maxContinuousPages = 10, // 연속 모드에서 최대 표시할 페이지 수
+
     // render
     itemRender = defaultItemRender,
     jumpPrevIcon,
@@ -115,7 +119,7 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     current + (showLessItems ? 3 : 5),
   );
 
-  // 새로 추가: mega jump 페이지 계산
+  // mega jump 페이지 계산
   const megaJumpPrevPage = Math.max(1, current - jumpSize);
   const megaJumpNextPage = Math.min(
     calculatePage(undefined, pageSize, total),
@@ -235,19 +239,53 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     return current;
   }
 
-  const hasPrev = current > 1;
-  const hasNext = current < calculatePage(undefined, pageSize, total);
+  // 기본 이전/다음 페이지 계산
+  let hasPrev = current > 1;
+  let hasNext = current < calculatePage(undefined, pageSize, total);
 
-  // 새로 추가: mega jump 가능 여부 확인
+  // continuous 모드에서는 그룹 단위로 이전/다음 버튼 활성화 여부 결정
+  if (paginationType === 'continuous') {
+    const groupSize = maxContinuousPages;
+    const currentGroup = Math.ceil(current / groupSize);
+    const totalGroups = Math.ceil(calculatePage(undefined, pageSize, total) / groupSize);
+
+    hasPrev = currentGroup > 1;
+    hasNext = currentGroup < totalGroups;
+  }
+
+  // mega jump 가능 여부 확인
   const hasMegaPrev = current > 1;
   const hasMegaNext = current < calculatePage(undefined, pageSize, total);
 
   function prevHandle() {
-    if (hasPrev) handleChange(current - 1);
+    if (paginationType === 'continuous') {
+      // continuous 모드에서는 그룹 단위로 이동
+      const groupSize = maxContinuousPages;
+      const currentGroup = Math.ceil(current / groupSize);
+      if (currentGroup > 1) {
+        const prevGroupStartPage = (currentGroup - 2) * groupSize + 1;
+        handleChange(prevGroupStartPage);
+      }
+    } else if (hasPrev) {
+      // 기본 동작: 이전 페이지로 이동
+      handleChange(current - 1);
+    }
   }
 
   function nextHandle() {
-    if (hasNext) handleChange(current + 1);
+    if (paginationType === 'continuous') {
+      // continuous 모드에서는 그룹 단위로 이동
+      const groupSize = maxContinuousPages;
+      const currentGroup = Math.ceil(current / groupSize);
+      const totalGroups = Math.ceil(calculatePage(undefined, pageSize, total) / groupSize);
+      if (currentGroup < totalGroups) {
+        const nextGroupStartPage = currentGroup * groupSize + 1;
+        handleChange(nextGroupStartPage);
+      }
+    } else if (hasNext) {
+      // 기본 동작: 다음 페이지로 이동
+      handleChange(current + 1);
+    }
   }
 
   function jumpPrevHandle() {
@@ -258,7 +296,7 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     handleChange(jumpNextPage);
   }
 
-  // 새로 추가: mega jump 핸들러
+  // mega jump 핸들러
   function megaJumpPrevHandle() {
     handleChange(megaJumpPrevPage);
   }
@@ -297,7 +335,7 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     runIfEnter(event, jumpNextHandle);
   }
 
-  // 새로 추가: mega jump 키보드 이벤트 핸들러
+  // mega jump 키보드 이벤트 핸들러
   function runIfEnterMegaJumpPrev(event: React.KeyboardEvent<HTMLLIElement>) {
     runIfEnter(event, megaJumpPrevHandle);
   }
@@ -328,7 +366,7 @@ const Pagination: React.FC<PaginationProps> = (props) => {
       : nextButton;
   }
 
-  // 새로 추가: mega jump 버튼 렌더링 함수
+  // mega jump 버튼 렌더링 함수
   function renderMegaJumpPrev(megaPrevPage: number) {
     const megaPrevButton = itemRender(
       megaPrevPage,
@@ -375,7 +413,7 @@ const Pagination: React.FC<PaginationProps> = (props) => {
 
   let jumpNext: React.ReactElement<PagerProps> = null;
 
-  // 새로 추가: mega jumper 버튼 초기화
+  // mega jumper 버튼 초기화
   let megaJumpPrev: React.ReactNode = null;
   let megaJumpNext: React.ReactNode = null;
 
@@ -465,7 +503,25 @@ const Pagination: React.FC<PaginationProps> = (props) => {
 
   // ====================== Normal ======================
   const pageBufferSize = showLessItems ? 1 : 2;
-  if (allPages <= 3 + pageBufferSize * 2) {
+
+  // 새로운 페이지네이션 타입 처리 - continuous
+  if (paginationType === 'continuous') {
+    // 현재 페이지가 속한 그룹 계산
+    const groupSize = maxContinuousPages;
+    const currentGroup = Math.ceil(current / groupSize);
+
+    // 현재 그룹의 시작/끝 페이지 계산
+    const startPage = (currentGroup - 1) * groupSize + 1;
+    const endPage = Math.min(startPage + groupSize - 1, allPages);
+
+    // 그룹 내의 모든 페이지 번호 표시
+    for (let i = startPage; i <= endPage; i += 1) {
+      pagerList.push(
+        <Pager {...pagerProps} key={i} page={i} active={current === i} />
+      );
+    }
+  } else if (allPages <= 3 + pageBufferSize * 2) {
+    // 기존 기본 페이지네이션 렌더링 로직
     if (!allPages) {
       pagerList.push(
         <Pager
@@ -576,7 +632,7 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     }
   }
 
-  // 새로 추가: mega jump 버튼 생성
+  // mega jump 버튼 생성
   if (jumper) {
     const megaPrevContent = renderMegaJumpPrev(megaJumpPrevPage);
     const megaNextContent = renderMegaJumpNext(megaJumpNextPage);
@@ -627,6 +683,7 @@ const Pagination: React.FC<PaginationProps> = (props) => {
         onKeyDown={runIfEnterPrev}
         className={classNames(`${prefixCls}-prev`, paginationClassNames?.item, {
           [`${prefixCls}-disabled`]: prevDisabled,
+          [`${prefixCls}-continuous-prev`]: paginationType === 'continuous',
         })}
         style={styles?.item}
         aria-disabled={prevDisabled}
@@ -638,14 +695,12 @@ const Pagination: React.FC<PaginationProps> = (props) => {
 
   let next = renderNext(nextPage);
   if (next) {
-    let nextDisabled: boolean, nextTabIndex: number | null;
+    let nextDisabled = !hasNext || !allPages;
+    let nextTabIndex = nextDisabled ? null : 0;
 
     if (simple) {
       nextDisabled = !hasNext;
       nextTabIndex = hasPrev ? 0 : null;
-    } else {
-      nextDisabled = !hasNext || !allPages;
-      nextTabIndex = nextDisabled ? null : 0;
     }
 
     next = (
@@ -656,6 +711,7 @@ const Pagination: React.FC<PaginationProps> = (props) => {
         onKeyDown={runIfEnterNext}
         className={classNames(`${prefixCls}-next`, paginationClassNames?.item, {
           [`${prefixCls}-disabled`]: nextDisabled,
+          [`${prefixCls}-continuous-next`]: paginationType === 'continuous',
         })}
         style={styles?.item}
         aria-disabled={nextDisabled}
@@ -672,6 +728,7 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     [`${prefixCls}-simple`]: simple,
     [`${prefixCls}-disabled`]: disabled,
     [`${prefixCls}-with-mega-jumpers`]: jumper,
+    [`${prefixCls}-continuous`]: paginationType === 'continuous',  // 새로운 클래스 추가
   });
 
   return (
@@ -682,12 +739,12 @@ const Pagination: React.FC<PaginationProps> = (props) => {
       {...dataOrAriaAttributeProps}
     >
       {totalText}
-      {/* 새로 추가: mega jump prev 버튼 */}
+      {/* mega jump prev 버튼 */}
       {jumper && megaJumpPrev}
       {prev}
       {simple ? simplePager : pagerList}
       {next}
-      {/* 새로 추가: mega jump next 버튼 */}
+      {/* mega jump next 버튼 */}
       {jumper && megaJumpNext}
       <Options
         locale={locale}

@@ -91,6 +91,9 @@ export interface PaginationProps
    * 10페이지 다음 점프 버튼의 아이콘
    */
   megaJumpNextIcon?: React.ReactNode;
+
+  paginationType?: string;
+  maxContinuousPages?: number;
 }
 
 export interface PaginationState {
