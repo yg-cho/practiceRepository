@@ -30,7 +30,7 @@ function calculatePage(p: number | undefined, pageSize: number, total: number) {
   return Math.floor((total - 1) / _pageSize) + 1;
 }
 
-// Dot 타입을 위한 새로운 컴포넌트
+// Dot 타입을 위한 컴포넌트
 const DotPager = ({ active, onClick, page, className = '', style }) => {
   return (
     <li
@@ -783,6 +783,11 @@ const Pagination: React.FC<PaginationProps> = (props) => {
     [`${prefixCls}-dot`]: paginationType === 'dot', // Dot 타입 클래스 추가
   });
 
+  // Dot 타입일 때는 이전/다음 버튼 표시 안 함
+  const shouldShowPrev = paginationType !== 'dot' && prev;
+  const shouldShowNext = paginationType !== 'dot' && next;
+  const shouldShowMegaJumpers = paginationType !== 'dot' && jumper;
+
   return (
     <ul
       className={cls}
@@ -791,13 +796,15 @@ const Pagination: React.FC<PaginationProps> = (props) => {
       {...dataOrAriaAttributeProps}
     >
       {totalText}
-      {/* mega jump prev 버튼 */}
-      {jumper && megaJumpPrev}
-      {prev}
+      {/* mega jump prev 버튼 - Dot 타입일 때는 표시 안 함 */}
+      {shouldShowMegaJumpers && megaJumpPrev}
+      {/* 이전 버튼 - Dot 타입일 때는 표시 안 함 */}
+      {shouldShowPrev && prev}
       {simple ? simplePager : pagerList}
-      {next}
-      {/* mega jump next 버튼 */}
-      {jumper && megaJumpNext}
+      {/* 다음 버튼 - Dot 타입일 때는 표시 안 함 */}
+      {shouldShowNext && next}
+      {/* mega jump next 버튼 - Dot 타입일 때는 표시 안 함 */}
+      {shouldShowMegaJumpers && megaJumpNext}
       <Options
         locale={locale}
         rootPrefixCls={prefixCls}
