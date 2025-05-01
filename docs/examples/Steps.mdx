@@ -1,0 +1,193 @@
+# Steps 컴포넌트에서 사용자 지정 아이콘이 표시되지 않는 문제 심층 분석
+
+## 1. 아이콘 우선순위 문제
+
+rc-steps 라이브러리는 엄격한 아이콘 선택 우선순위를 가지고 있습니다:
+
+### 정상적인 우선순위 흐름:
+1. 사용자 지정 아이콘 (`item.icon`)
+2. 상태별 아이콘 (`icons[status]`)
+3. 기본 숫자 표시
+
+### 문제의 원인:
+커스터마이징 과정에서 이 우선순위가 변경되었을 가능성이 높습니다. 발생 가능한 시나리오:
+
+```jsx
+// 문제가 있는 코드 (예시)
+const renderIcon = (item, status, stepNumber) => {
+  // 우선순위 역전: 상태 아이콘이 사용자 아이콘보다 우선함
+  if (customIcons[status]) {
+    return customIcons[status];
+  }
+
+  // 이 부분이 실행되지 않음
+  if (item.icon) {
+    return item.icon;
+  }
+
+  return <span>{stepNumber}</span>;
+};
+```
+
+또는 `icons` 객체가 모든 상태(wait, process 등)에 대한 아이콘을 정의하고 있어, 사용자 아이콘을 확인하기 전에 항상 상태 아이콘이 선택될 수 있습니다.
+
+### 심층 진단:
+1. Steps 컴포넌트에서 정의된 `icons` 객체가 너무 포괄적이지 않은지 확인
+2. rc-steps로 전달되기 전에 아이콘 선택 로직이 오버라이드되는지 검사
+
+### 해결 방법:
+```jsx
+// 올바른 우선순위 복원
+const stepIconRender = ({ node, status, index }) => {
+  const currentItem = items[index];
+
+  // 1. 사용자 정의 아이콘 우선 확인
+  if (currentItem && currentItem.icon) {
+    return <span className={`${prefixCls}-icon`}>{currentItem.icon}</span>;
+  }
+
+  // 2. 그 다음 기본 렌더링 (상태 기반 아이콘 등)
+  return node;
+};
+```
+
+## 2. 아이콘 렌더링 오버라이드
+
+`stepIconRender` 함수는 rc-steps가 아이콘을 렌더링하는 방식을 완전히 제어할 수 있습니다.
+
+### 문제의 원인:
+커스터마이징한 `stepIconRender` 함수에서 사용자 아이콘을 검사하지 않고 항상 커스텀 로직만 적용할 수 있습니다.
+
+```jsx
+// 문제가 있는 stepIconRender 함수 (예시)
+const stepIconRender = ({ node, status }) => {
+  // node를 확인하거나 사용자 아이콘을 검사하지 않고
+  // 항상 커스텀 아이콘만 반환
+  return (
+    <span className={`${prefixCls}-icon`}>
+      {customIconsMapping[status]}
+    </span>
+  );
+};
+```
+
+### 심층 진단:
+1. `stepIconRender` 함수가 항상 기본 아이콘만 반환하는지 검사
+2. `node` 파라미터를 완전히 무시하는지 확인
+3. 사용자 지정 아이콘이 포함된 항목을 특별히 확인하는 로직이 있는지 검사
+
+### 해결 방법:
+```jsx
+const stepIconRender = ({ node, status, index }) => {
+  // 프로세스 로직 등 기존 처리는 유지
+  if (status === 'process' && mergedPercent !== undefined) {
+    // ...percent 관련 로직
+    return (/* progress UI */);
+  }
+
+  // 사용자 지정 아이콘 확인
+  const currentItem = items[index];
+  if (currentItem && currentItem.icon) {
+    return <span className={`${prefixCls}-icon`}>{currentItem.icon}</span>;
+  }
+
+  // 사용자 지정 아이콘이 없는 경우, 상태별 커스텀 아이콘이나 기본 노드 반환
+  if (customIcons[status]) {
+    return customIcons[status];
+  }
+
+  return node;
+};
+```
+
+이 접근 방식은 사용자 지정 아이콘, 커스텀 상태 아이콘, 기본 노드 순서로 우선순위를 명확히 합니다.
+
+## 4. CSS 가시성 문제
+
+CSS 규칙으로 인해 사용자 지정 아이콘이 표시되지 않는 문제가 있을 수 있습니다.
+
+### 문제의 원인:
+사용자 지정 아이콘을 가진 항목에도 영향을 미치는 과도하게 광범위한 CSS 선택자를 사용했을 수 있습니다.
+
+```css
+/* 문제가 있는 CSS (예시) */
+.ant-steps-item-icon .ant-steps-icon {
+  display: none; /* 모든 아이콘 숨김 */
+}
+
+.ant-steps-item-icon .custom-icon {
+  display: block; /* 커스텀 아이콘만 표시 */
+}
+```
+
+하지만 사용자 지정 아이콘은 `.custom-icon` 클래스를 갖지 않을 수 있어 모든 아이콘이 숨겨집니다.
+
+### 심층 진단:
+1. 개발자 도구로 DOM을 검사하여 사용자 아이콘 요소가 존재하는지 확인
+2. 해당 요소에 영향을 미치는 CSS 규칙 검사
+3. 특히 다음과 같은 CSS 속성을 확인:
+- `display: none` 또는 `visibility: hidden`
+- `opacity: 0`
+- `pointer-events: none` (클릭은 불가하지만 렌더링은 됨)
+- `position: absolute`와 함께 요소를 화면 밖으로 이동시키는 속성
+- `width: 0`, `height: 0`
+- `transform: scale(0)` 또는 요소를 숨기는 다른 변형
+
+### 해결 방법:
+```css
+/* 수정된 CSS */
+/* 기본 아이콘을 숨기되 사용자 지정 아이콘은 제외 */
+.ant-steps-item:not(.ant-steps-item-custom) .ant-steps-item-icon .ant-steps-icon {
+  display: none;
+}
+
+/* 특별히 사용자 지정 아이콘이 있는 경우 항상 표시 */
+.ant-steps-item-custom .ant-steps-item-icon .ant-steps-icon {
+  display: block;
+}
+```
+
+이 CSS는 사용자 지정 아이콘이 없는 항목에만 영향을 미치도록 선택자를 제한합니다.
+
+## 통합 해결 방안
+
+이 세 가지 문제를 동시에 해결하는 접근 방식:
+
+1. `stepIconRender` 함수에서 명시적인 아이콘 우선순위 설정
+2. icons 객체가 사용자 아이콘을 덮어쓰지 않도록 수정
+3. CSS 선택자를 더 구체적으로 만들어 사용자 아이콘 표시 보장
+
+```jsx
+// 아이콘 렌더링 로직 수정
+const stepIconRender = ({ node, status, index }) => {
+  // 사용자 아이콘 우선 확인
+  const currentItem = items && items[index];
+  if (currentItem && currentItem.icon) {
+    return <span className={`${prefixCls}-icon ${prefixCls}-user-icon`}>{currentItem.icon}</span>;
+  }
+
+  // 기존 로직 실행
+  if (status === 'process' && mergedPercent !== undefined) {
+    // ...
+  }
+
+  // 상태 기반 커스텀 아이콘
+  if (customIcons && customIcons[status]) {
+    return customIcons[status];
+  }
+
+  return node;
+};
+```
+
+```css
+/* 더 구체적인 CSS */
+/* 사용자 아이콘 강제 표시 */
+.ant-steps-item .ant-steps-user-icon {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+```
+
+이러한 변경은 사용자 아이콘이 항상 최우선으로 표시되도록 보장하며, CSS 규칙과 렌더링 로직 모두에서 우선순위를 명확히 합니다.
